@@ -111,3 +111,52 @@ Java_net_mulliken_pinenotenotebook_NoteView_nativeOnWindowFocusChanged(JNIEnv *e
         disablePen();
     }
 }
+
+jobject createBitmapFromPixelData(JNIEnv *env, int _width, int _height, const uint32_t* pixelData) {
+    jclass bitmapConfig = env->FindClass("android/graphics/Bitmap$Config");
+    jfieldID rgba8888FieldID = env->GetStaticFieldID(bitmapConfig, "ARGB_8888", "Landroid/graphics/Bitmap$Config;");
+    jobject rgba8888Obj = env->GetStaticObjectField(bitmapConfig, rgba8888FieldID);
+
+    jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
+    jmethodID createBitmapMethodID = env->GetStaticMethodID(bitmapClass, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
+    jobject bitmapObj = env->CallStaticObjectMethod(bitmapClass, createBitmapMethodID, _width, _height, rgba8888Obj);
+
+    jintArray pixels = env->NewIntArray(_width * _height);
+    for (int i = 0; i < _width * _height; i++)
+    {
+        int currentPixel = pixelData[i];
+        env->SetIntArrayRegion(pixels, i, 1, &currentPixel);
+    }
+
+    jmethodID setPixelsMid = env->GetMethodID(bitmapClass, "setPixels", "([IIIIIII)V");
+    env->CallVoidMethod(bitmapObj, setPixelsMid, pixels, 0, _width, 0, 0, _width, _height);
+    return bitmapObj;
+}
+
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_net_mulliken_pinenotenotebook_NoteView_nativeGetFullOverlayBitmap(JNIEnv *env, jobject obj)
+{
+    uint32_t *pixelData = pineNotePen->getFullPixelData();
+    int _width = pineNotePen->ebc_info.width;
+    int _height = pineNotePen->ebc_info.height;
+
+    jobject bitmap = createBitmapFromPixelData(env, _width, _height, pixelData);
+    free(pixelData);
+
+    return bitmap;
+}
+
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_net_mulliken_pinenotenotebook_NoteView_nativeGetOverlayBitmap(JNIEnv *env, jobject obj)
+{
+    uint32_t *pixelData = pineNotePen->getBoundedPixelData();
+    int _width = pineNotePen->display_y2 - pineNotePen->display_y1;
+    int _height = pineNotePen->display_x2 - pineNotePen->display_x1;
+
+    jobject bitmap = createBitmapFromPixelData(env, _width, _height, pixelData);
+    free(pixelData);
+
+    return bitmap;
+}

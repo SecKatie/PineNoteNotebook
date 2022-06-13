@@ -1,6 +1,7 @@
 package net.mulliken.pinenotenotebook;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.util.Log;
 import android.view.MotionEvent;
 
@@ -35,6 +36,10 @@ public class NoteJNI {
     private native void nativeSetDisplayMode(int mode);
 
     private native void nativeClearOverlay();
+
+    private native Bitmap nativeGetFullOverlayBitmap();
+
+    private native Bitmap nativeGetOverlayBitmap();
 
     private static NoteJNI instance;
 
